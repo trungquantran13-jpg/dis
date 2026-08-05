@@ -1,0 +1,9 @@
+{
+  "name": "discord-voice-stay",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@discordjs/voice": "^0.16.1",
+    "discord.js-selfbot-v13": "^3.7.1"
+  }
+}
