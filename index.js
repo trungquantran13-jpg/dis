@@ -3,7 +3,7 @@ const { joinVoiceChannel } = require('@discordjs/voice');
 const http = require('http');
 
 // =========================
-// 1. WEB SERVER (Giữ cho Render luôn hoạt động)
+// 1. WEB SERVER (Giữ cho Render hoạt động)
 // =========================
 let visitCount = 0;
 
@@ -14,12 +14,6 @@ const server = http.createServer((req, res) => {
     if (req.url === '/' || req.url === '/ping') {
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end(`Discord Voice Bot is Running!\nRequests: ${visitCount}\n`);
-        return;
-    }
-
-    if (req.url === '/stats') {
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ status: 'online', requests: visitCount }));
         return;
     }
 
@@ -47,34 +41,39 @@ const client = new Client({
     }
 });
 
-// Bắt lỗi WebSocket để tránh crash hoặc đứng ngầm
+// --- IN BẮT LỖI CHI TIẾT (DEBUG LOGS) ---
+client.on('debug', (info) => {
+    console.log(`[DISCORD DEBUG] ${info}`);
+});
+
 client.on('error', (error) => {
-    console.error('[LỖI DISCORD CLIENT]:', error.message);
+    console.error('[DISCORD ERROR]', error);
 });
 
-client.on('shardDisconnect', () => {
-    console.log('[SYSTEM] Mất kết nối Discord, đang kết nối lại...');
+client.on('warn', (info) => {
+    console.warn('[DISCORD WARN]', info);
 });
 
+client.on('shardDisconnect', (event, id) => {
+    console.error(`[DISCORD DISCONNECT] Shard ${id} bị ngắt kết nối: Code ${event.code} | Reason: ${event.reason}`);
+});
+
+// --- KHI ĐĂNG NHẬP THÀNH CÔNG ---
 client.on('ready', async () => {
     console.log(`[SYSTEM] Đã đăng nhập thành công: ${client.user.tag}`);
 
     try {
-        // Lấy thông tin kênh từ Discord
-        const channel = await client.channels.fetch(VOICE_CHANNEL_ID).catch(() => null);
+        const channel = await client.channels.fetch(VOICE_CHANNEL_ID).catch((err) => {
+            console.error('[VOICE ERROR] Lỗi khi fetch channel:', err.message);
+            return null;
+        });
 
         if (!channel) {
-            console.error(`[VOICE] Không tìm thấy kênh ID ${VOICE_CHANNEL_ID}! Kiểm tra tài khoản đã join server chưa.`);
+            console.error(`[VOICE ERROR] Không tìm thấy kênh ID ${VOICE_CHANNEL_ID}!`);
             return;
         }
 
-        if (!channel.isVoice()) {
-            console.error(`[VOICE] ID ${VOICE_CHANNEL_ID} không phải là phòng Voice!`);
-            return;
-        }
-
-        // Thực hiện kết nối vào Voice Channel
-        joinVoiceChannel({
+        const connection = joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
@@ -82,9 +81,9 @@ client.on('ready', async () => {
             selfMute: true
         });
 
-        console.log(`[VOICE] Đã treo thành công vào phòng: ${channel.name} (Server: ${channel.guild.name})`);
+        console.log(`[VOICE SUCCESS] Đã kết nối vào phòng: ${channel.name}`);
     } catch (err) {
-        console.error('[VOICE] Lỗi kết nối Voice:', err);
+        console.error('[VOICE EXCEPTION]', err);
     }
 });
 
@@ -94,10 +93,10 @@ client.on('ready', async () => {
 const token = process.env.DISCORD_TOKEN;
 
 if (!token) {
-    console.error('[LỖI] Chưa cài đặt DISCORD_TOKEN trong Environment Variables trên Render!');
+    console.error('[CONFIG ERROR] Không tìm thấy DISCORD_TOKEN trong biến môi trường!');
 } else {
-    console.log('[SYSTEM] Đang gửi yêu cầu đăng nhập Discord...');
+    console.log('[SYSTEM] Bắt đầu gửi request đăng nhập tới Discord...');
     client.login(token).catch(err => {
-        console.error('[LỖI LOGIN]:', err.message);
+        console.error('[LOGIN FAILURE] Đăng nhập thất bại:', err);
     });
 }
