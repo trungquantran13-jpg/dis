@@ -1,9 +1,16 @@
 {
   "name": "discord-voice-stay",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "license": "MIT",
   "main": "index.js",
+  "scripts": {
+    "start": "node --max-old-space-size=450 index.js"
+  },
   "dependencies": {
-    "@discordjs/voice": "^0.16.1",
-    "discord.js-selfbot-v13": "^3.7.1"
+    "@trickstarcandina/discordjs-selfbot": "^1.0.0",
+    "@snazzah/davey": "^0.1.9",
+    "@discordjs/voice": "^0.19.0",
+    "@discordjs/opus": "^0.10.0",
+    "sodium-native": "^4.3.0"
   }
 }
